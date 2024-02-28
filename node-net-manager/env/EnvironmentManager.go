@@ -8,8 +8,6 @@ import (
 	"NetManager/network"
 	"errors"
 	"fmt"
-	"github.com/vishvananda/netlink"
- 	"github.com/vishvananda/netns"
 	"log"
 	"net"
 	"os"
@@ -17,6 +15,9 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
+
+	"github.com/vishvananda/netlink"
+	"github.com/vishvananda/netns"
 )
 
 const NamespaceAlreadyDeclared string = "namespace already declared"
@@ -126,10 +127,12 @@ func NewCustom(proxyname string, customConfig Configuration) *Environment {
 // NewEnvironmentClusterConfigured Creates a new environment using the default configuration and asking the cluster for a new subnetwork
 func NewEnvironmentClusterConfigured(proxyname string) *Environment {
 	logger.InfoLogger().Println("Asking the cluster for a new subnetwork")
-	subnetwork, err := mqtt.RequestSubnetworkMqttBlocking()
-	if err != nil {
-		log.Fatal("Invalid subnetwork received. Can't proceed.")
-	}
+
+	//subnetwork, err := mqtt.RequestSubnetworkMqttBlocking() // TODO darf nicht geskipped werden.
+	//subnetwork := "10.0.0.0/16"
+	// if err != nil {
+	// 	log.Fatal("Invalid subnetwork received. Can't proceed.")
+	// }
 
 	logger.InfoLogger().Println("Creating with default config")
 	mtusize, err := strconv.Atoi(os.Getenv("TUN_MTU_SIZE"))
@@ -139,7 +142,7 @@ func NewEnvironmentClusterConfigured(proxyname string) *Environment {
 	}
 	config := Configuration{
 		HostBridgeName:             "goProxyBridge",
-		HostBridgeIP:               network.NextIP(net.ParseIP(subnetwork), 1).String(),
+		HostBridgeIP:               "10.0.0.2", // TOOD network.NextIP(net.ParseIP(subnetwork), 1).String(),
 		HostBridgeMask:             "/26",
 		HostTunName:                "goProxyTun",
 		ConnectedInternetInterface: "",
@@ -155,7 +158,6 @@ func (env *Environment) Destroy() {
 		},
 	})
 }
-
 
 func (env *Environment) IsServiceDeployed(jobName string) bool {
 	env.deployedServicesLock.RLock()
@@ -242,7 +244,9 @@ func (env *Environment) setContainerRoutes(containerPid int, peerVeth string) er
 		if err != nil {
 			return err
 		}
-		dst, err := netlink.ParseIPNet("0.0.0.0/0")
+		//dst, err := netlink.ParseIPNet("0.0.0.0/0") // TODO Das war davor - darf nicht mehr, weil es bereits deine default route gibt
+		// TODO Es muss ein oakestra netzwerk bestimmt werden
+		dst, err := netlink.ParseIPNet("10.15.0.0/2")
 		if err != nil {
 			return err
 		}
@@ -508,4 +512,3 @@ func (env *Environment) generateAddress() (net.IP, error) {
 func (env *Environment) freeContainerAddress(ip net.IP) {
 	env.addrCache = append(env.addrCache, ip)
 }
-

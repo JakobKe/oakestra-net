@@ -3,12 +3,19 @@ package handlers
 import (
 	"NetManager/env"
 	"NetManager/logger"
+	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 
+	"gopkg.in/errgo.v2/fmt/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/gorilla/mux"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 type ContainerManager struct {
@@ -33,10 +40,46 @@ func (m *ContainerManager) Register(Env *env.Environment, WorkerID *string, Node
 	m.WorkerID = WorkerID
 	m.Configuration = netConfiguration{NodePublicAddress: NodePublicAddress, NodePublicPort: NodePublicPort}
 
+	log.Println("Container Endpoints starting")
+
 	env.InitContainerDeployment(Env)
+	Router.HandleFunc("/test", m.TEST).Methods("GET")
 	Router.HandleFunc("/container/deploy", m.containerDeploy).Methods("POST")
 	Router.HandleFunc("/container/undeploy", m.containerUndeploy).Methods("POST")
 	Router.HandleFunc("/docker/undeploy", m.containerUndeploy).Methods("POST")
+}
+
+func getPortInformation(podName string) (string, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		fmt.Printf("Error building in-cluster kubeconfig: %v\n", err)
+		return "", err
+	}
+
+	// Kubernetes-Client erstellen
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		fmt.Printf("Fehler beim Erstellen des Kubernetes-Clients: %v\n", err)
+		return "", err
+	}
+
+	// Pod-Informationen abrufen
+	pod, err := clientset.CoreV1().Pods("default").Get(context.TODO(), podName, metav1.GetOptions{})
+	if err != nil {
+		fmt.Printf("Fehler beim Abrufen von Pod-Informationen: %v\n", err)
+		return "", err
+	}
+
+	container := pod.Spec.Containers[0]
+	for _, port := range container.Ports {
+		return fmt.Sprintf("%d", port.ContainerPort), nil
+	}
+
+	return "", errors.Newf("No Containerport assigend to %s ", podName)
+}
+
+func (m *ContainerManager) TEST(writer http.ResponseWriter, request *http.Request) {
+	getPortInformation("samplepod")
 }
 
 /*
@@ -70,11 +113,21 @@ func (m *ContainerManager) containerDeploy(writer http.ResponseWriter, request *
 
 	reqBody, _ := io.ReadAll(request.Body)
 	log.Println("ReqBody received :", reqBody)
-	var deployTask ContainerDeployTask
-	err := json.Unmarshal(reqBody, &deployTask)
+	var k8sdeployTask k8sDeployTask
+	err := json.Unmarshal(reqBody, &k8sdeployTask)
 	if err != nil {
 		writer.WriteHeader(http.StatusBadRequest)
 	}
+	deployTask := ContainerDeployTask{
+		Pid:            k8sdeployTask.Pid,
+		ServiceName:    k8sdeployTask.ServiceName,
+		Instancenumber: k8sdeployTask.Instancenumber,
+	}
+
+	deployTask.PortMappings, _ = getPortInformation(k8sdeployTask.Podname)
+
+	log.Printf("\n\n Funktioniert \n\n Port: %s", deployTask.PortMappings)
+
 	deployTask.Runtime = env.CONTAINER_RUNTIME
 	deployTask.PublicAddr = m.Configuration.NodePublicAddress
 	deployTask.PublicPort = m.Configuration.NodePublicPort

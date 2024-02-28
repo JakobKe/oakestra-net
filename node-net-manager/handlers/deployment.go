@@ -25,6 +25,13 @@ type ContainerDeployTask struct {
 	Finish         chan TaskReady
 }
 
+type k8sDeployTask struct {
+	Pid            int    `json:"pid"`
+	ServiceName    string `json:"serviceName"`
+	Instancenumber int    `json:"instanceNumber"`
+	Podname        string `json:"podName"`
+}
+
 type TaskReady struct {
 	IP  net.IP
 	Err error
@@ -86,11 +93,13 @@ func deploymentHandler(requestStruct *ContainerDeployTask) (net.IP, error) {
 	//attach network to the container
 	netHandler := env.GetNetDeployment(requestStruct.Runtime)
 	addr, err := netHandler.DeployNetwork(requestStruct.Pid, requestStruct.ServiceName, requestStruct.Instancenumber, requestStruct.PortMappings)
-
 	if err != nil {
 		logger.ErrorLogger().Println("[ERROR]:", err)
+		logger.ErrorLogger().Println("Adress", addr)
 		return nil, err
 	}
+
+	logger.ErrorLogger().Println("Ab hier geht es eh nicht mehr weiter.")
 
 	//notify to net-component
 	err = mqtt.NotifyDeploymentStatus(

@@ -4,7 +4,6 @@ import "net"
 
 const (
 	CONTAINER_RUNTIME = "container"
-	UNIKERNEL_RUNTIME = "unikernel"
 )
 
 type NetDeploymentInterface interface {
@@ -15,8 +14,6 @@ func GetNetDeployment(handler string) NetDeploymentInterface {
 	switch handler {
 	case CONTAINER_RUNTIME:
 		return GetContainerNetDeployment()
-	case UNIKERNEL_RUNTIME:
-		return GetUnikernelNetDeployment()
 	}
 	return nil
 }

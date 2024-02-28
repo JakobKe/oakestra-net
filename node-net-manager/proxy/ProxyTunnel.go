@@ -5,12 +5,9 @@ import (
 	"NetManager/env"
 	"NetManager/logger"
 	"NetManager/network"
+	"bytes"
 	"errors"
 	"fmt"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/ip4defrag"
-	"github.com/google/gopacket/layers"
-	"github.com/songgao/water"
 	"log"
 	"math/rand"
 	"net"
@@ -18,6 +15,11 @@ import (
 	"os/exec"
 	"strconv"
 	"sync"
+
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/ip4defrag"
+	"github.com/google/gopacket/layers"
+	"github.com/songgao/water"
 )
 
 // Ipv4 defragger
@@ -137,8 +139,11 @@ func NewCustom(configuration Configuration) GoProxyTunnel {
 	//create the TUN device
 	proxy.createTun()
 
+	log.Println("1")
+
 	//set local ip
 	ipstring, _ := network.GetLocalIPandIface()
+	log.Println(ipstring)
 	proxy.localIP = net.ParseIP(ipstring)
 
 	logger.InfoLogger().Printf("Created ProxyTun device: %s\n", proxy.ifce.Name())
@@ -347,22 +352,34 @@ func (proxy *GoProxyTunnel) IsListening() bool {
 
 // create an instance of the proxy TUN device and setup the environment
 func (proxy *GoProxyTunnel) createTun() {
+
+	var stdout, stderr bytes.Buffer
+
 	//create tun device
 	config := water.Config{
 		DeviceType: water.TUN,
 	}
 	config.Name = proxy.HostTUNDeviceName
 	ifce, err := water.New(config)
+	log.Printf("Name des Interface: %s", ifce.Name())
 	if err != nil {
+		// TODO: Fehlermeldung sollte besser sein.
 		log.Fatal(err)
 	}
 
 	logger.InfoLogger().Println("Bringing tun up with addr " + proxy.tunNetIP + "/12")
 	cmd := exec.Command("ip", "addr", "add", proxy.tunNetIP+"/12", "dev", ifce.Name())
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	err = cmd.Run()
+
+	log.Printf("Ausgabe des Befehls: %s", stdout.String())
+	log.Printf("Fehlerausgabe des Befehls: %s", stderr.String())
+
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	cmd = exec.Command("ip", "link", "set", "dev", ifce.Name(), "up")
 	err = cmd.Run()
 	if err != nil {
@@ -404,10 +421,12 @@ func (proxy *GoProxyTunnel) createTun() {
 	if nil != err {
 		log.Fatal("Unable to get UDP socket:", err)
 	}
+	log.Println(lstnAddr)
 	lstnConn, err := net.ListenUDP("udp", lstnAddr)
 	if nil != err {
 		log.Fatal("Unable to listen on UDP socket:", err)
 	}
+	log.Println(lstnConn)
 	err = lstnConn.SetReadBuffer(BUFFER_SIZE)
 	if nil != err {
 		log.Fatal("Unable to set Read Buffer:", err)
