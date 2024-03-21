@@ -5,7 +5,6 @@ import (
 	"NetManager/mqtt"
 	"NetManager/network"
 	"fmt"
-	"log"
 	"net"
 	"runtime/debug"
 
@@ -34,7 +33,6 @@ func InitContainerDeployment(env *Environment) {
 // AttachNetworkToContainer Attach a Docker container to the bridge and the current network environment
 func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, sname string, instancenumber int, portmapping string) (net.IP, net.IP, error) {
 	env := h.env
-
 	cleanup := func(veth *netlink.Veth) {
 		_ = netlink.LinkDel(veth)
 	}
@@ -72,7 +70,6 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, sname string, instan
 		return nil, nil, err
 	}
 
-	log.Println("4")
 	// set ip to the container veth
 	logger.DebugLogger().Println("Assigning ip ", ip.String()+env.config.HostBridgeMask, " to container ")
 	if err := env.addPeerLinkNetwork(pid, ip.String()+env.config.HostBridgeMask, vethIfce.PeerName); err != nil {
@@ -120,7 +117,6 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, sname string, instan
 	}
 
 	env.BookVethNumber()
-	log.Println("6")
 	if err = env.setVethFirewallRules(vethIfce.Name); err != nil {
 		logger.ErrorLogger().Println("Error in setFirewallRules")
 		cleanup(vethIfce)
@@ -146,7 +142,6 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, sname string, instan
 		env.freeContainerAddress(ipv6)
 		return nil, nil, err
 	}
-	log.Println("8")
 	env.deployedServicesLock.Lock()
 	env.deployedServices[fmt.Sprintf("%s.%d", sname, instancenumber)] = service{
 		ip:          ip,

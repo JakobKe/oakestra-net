@@ -126,8 +126,6 @@ func (m *ContainerManager) containerDeploy(writer http.ResponseWriter, request *
 
 	deployTask.PortMappings, _ = getPortInformation(k8sdeployTask.Podname)
 
-	log.Printf("\n\n Funktioniert \n\n Port: %s", deployTask.PortMappings)
-
 	deployTask.Runtime = env.CONTAINER_RUNTIME
 	deployTask.PublicAddr = m.Configuration.NodePublicAddress
 	deployTask.PublicPort = m.Configuration.NodePublicPort

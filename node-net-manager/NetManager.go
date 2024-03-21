@@ -14,6 +14,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/tkanos/gonfig"
@@ -189,6 +190,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Überschreiben der MQTT Adresse, mit einer ENV Variblen
+	Configuration.ClusterMqttPort = os.Getenv("MOSQUITTO_SVC_SERVICE_PORT")
+	Configuration.ClusterUrl = os.Getenv("MOSQUITTO_SVC_SERVICE_HOST")
+	// TODO die ClusterURL ist so nicht ganz richtig. Das läuft ja nicht mehr im "Cluster"
 
 	if *debugMode {
 		logger.SetDebugMode()
