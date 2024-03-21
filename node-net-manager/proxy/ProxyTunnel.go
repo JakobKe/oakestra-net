@@ -139,8 +139,6 @@ func NewCustom(configuration Configuration) GoProxyTunnel {
 	//create the TUN device
 	proxy.createTun()
 
-	log.Println("1")
-
 	//set local ip
 	ipstring, _ := network.GetLocalIPandIface()
 	log.Println(ipstring)
