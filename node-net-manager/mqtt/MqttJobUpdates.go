@@ -5,10 +5,11 @@ import (
 	"NetManager/logger"
 	"NetManager/utils"
 	"encoding/json"
-	"github.com/eclipse/paho.mqtt.golang"
 	"log"
 	"sync"
 	"time"
+
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 var runningHandlers = utils.NewStringSlice()
@@ -94,6 +95,8 @@ func MqttRegisterInterest(jobName string, env jobEnvironmentManagerActions, inst
 		client:       GetNetMqttClient(),
 		instance:     instanceNumber,
 	}
+
+	log.Println(jobTimer)
 
 	jobTimer.topic = "jobs/" + jobName + "/updates_available"
 	GetNetMqttClient().RegisterTopic(jobTimer.topic, jobTimer.MessageHandler)

@@ -43,13 +43,13 @@ func (m *ContainerManager) Register(Env *env.Environment, WorkerID *string, Node
 	log.Println("Container Endpoints starting")
 
 	env.InitContainerDeployment(Env)
-	Router.HandleFunc("/test", m.TEST).Methods("GET")
 	Router.HandleFunc("/container/deploy", m.containerDeploy).Methods("POST")
 	Router.HandleFunc("/container/undeploy", m.containerUndeploy).Methods("POST")
 	Router.HandleFunc("/docker/undeploy", m.containerUndeploy).Methods("POST")
 }
 
 func getPortInformation(podName string) (string, error) {
+	return "90", nil
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		fmt.Printf("Error building in-cluster kubeconfig: %v\n", err)
@@ -76,10 +76,6 @@ func getPortInformation(podName string) (string, error) {
 	}
 
 	return "", errors.Newf("No Containerport assigend to %s ", podName)
-}
-
-func (m *ContainerManager) TEST(writer http.ResponseWriter, request *http.Request) {
-	getPortInformation("samplepod")
 }
 
 /*
@@ -119,9 +115,10 @@ func (m *ContainerManager) containerDeploy(writer http.ResponseWriter, request *
 		writer.WriteHeader(http.StatusBadRequest)
 	}
 	deployTask := ContainerDeployTask{
-		Pid:            k8sdeployTask.Pid,
-		ServiceName:    k8sdeployTask.ServiceName,
-		Instancenumber: k8sdeployTask.Instancenumber,
+		Pid:              0,
+		NetworkNamespace: k8sdeployTask.NetworkNamespace,
+		ServiceName:      k8sdeployTask.ServiceName,
+		Instancenumber:   k8sdeployTask.Instancenumber,
 	}
 
 	deployTask.PortMappings, _ = getPortInformation(k8sdeployTask.Podname)

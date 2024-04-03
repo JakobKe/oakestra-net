@@ -7,7 +7,7 @@ const (
 )
 
 type NetDeploymentInterface interface {
-	DeployNetwork(pid int, sname string, instancenumber int, portmapping string) (net.IP, error)
+	DeployNetwork(pid int, netns string, sname string, instancenumber int, portmapping string) (net.IP, error)
 }
 
 func GetNetDeployment(handler string) NetDeploymentInterface {

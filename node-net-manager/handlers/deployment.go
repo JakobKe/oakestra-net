@@ -6,6 +6,7 @@ import (
 	"NetManager/mqtt"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -13,23 +14,25 @@ import (
 )
 
 type ContainerDeployTask struct {
-	Pid            int    `json:"pid"`
-	ServiceName    string `json:"serviceName"`
-	Instancenumber int    `json:"instanceNumber"`
-	PortMappings   string `json:"portMappings"`
-	Runtime        string
-	PublicAddr     string
-	PublicPort     string
-	Env            *env.Environment
-	Writer         *http.ResponseWriter
-	Finish         chan TaskReady
+	Pid              int    `json:"pid"`
+	NetworkNamespace string `json:"networkNamespace"`
+	ServiceName      string `json:"serviceName"`
+	Instancenumber   int    `json:"instanceNumber"`
+	PortMappings     string `json:"portMappings"`
+	Runtime          string
+	PublicAddr       string
+	PublicPort       string
+	Env              *env.Environment
+	Writer           *http.ResponseWriter
+	Finish           chan TaskReady
 }
 
 type k8sDeployTask struct {
-	Pid            int    `json:"pid"`
-	ServiceName    string `json:"serviceName"`
-	Instancenumber int    `json:"instanceNumber"`
-	Podname        string `json:"podName"`
+	Pid              int    `json:"pid"`
+	NetworkNamespace string `json:"networkNamespace"`
+	ServiceName      string `json:"serviceName"`
+	Instancenumber   int    `json:"instanceNumber"`
+	Podname          string `json:"podName"`
 }
 
 type TaskReady struct {
@@ -92,14 +95,14 @@ func deploymentHandler(requestStruct *ContainerDeployTask) (net.IP, error) {
 
 	//attach network to the container
 	netHandler := env.GetNetDeployment(requestStruct.Runtime)
-	addr, err := netHandler.DeployNetwork(requestStruct.Pid, requestStruct.ServiceName, requestStruct.Instancenumber, requestStruct.PortMappings)
+	addr, err := netHandler.DeployNetwork(requestStruct.Pid, requestStruct.NetworkNamespace, requestStruct.ServiceName, requestStruct.Instancenumber, requestStruct.PortMappings)
 	if err != nil {
 		logger.ErrorLogger().Println("[ERROR]:", err)
 		logger.ErrorLogger().Println("Adress", addr)
 		return nil, err
 	}
 
-	logger.ErrorLogger().Println("Ab hier geht es eh nicht mehr weiter.")
+	log.Println(addr)
 
 	//notify to net-component
 	err = mqtt.NotifyDeploymentStatus(
@@ -110,6 +113,8 @@ func deploymentHandler(requestStruct *ContainerDeployTask) (net.IP, error) {
 		requestStruct.PublicAddr,
 		requestStruct.PublicPort,
 	)
+
+	log.Println("Nice")
 	if err != nil {
 		logger.ErrorLogger().Println("[ERROR]:", err)
 		return nil, err

@@ -186,10 +186,12 @@ func (env *Environment) createVethsPairAndAttachToBridge(sname string, mtu int) 
 		return nil, err
 	}
 	logger.DebugLogger().Println("Retrieved current bridge")
+	log.Println("Bridge: " + bridge.Attrs().Name)
 	hashedName := network.NameUniqueHash(sname, 4)
 	veth1name := fmt.Sprintf("veth%s%s%s", "00", strconv.Itoa(env.nextVethNumber), hashedName)
 	veth2name := fmt.Sprintf("veth%s%s%s", "01", strconv.Itoa(env.nextVethNumber), hashedName)
 	logger.DebugLogger().Println("creating veth pair: " + veth1name + "@" + veth2name)
+	log.Println("creating veth pair: " + veth1name + "@" + veth2name)
 
 	veth := &netlink.Veth{
 		LinkAttrs: netlink.LinkAttrs{
@@ -236,17 +238,17 @@ func (env *Environment) setVethFirewallRules(bridgeVethName string) error {
 }
 
 // add routes inside the container namespace to forward the traffic using the bridge
-func (env *Environment) setContainerRoutes(containerPid int, peerVeth string) error {
+func (env *Environment) setContainerRoutes(containerPid int, netnsPath string, peerVeth string) error {
 	//Add route to bridge
 	//sudo nsenter -n -t 5565 ip route add 0.0.0.0/0 via 127.19.x.y dev veth013
-	err := env.execInsideNs(containerPid, func() error {
+	err := env.execInsideNs(containerPid, netnsPath, func() error {
 		link, err := netlink.LinkByName(peerVeth)
 		if err != nil {
 			return err
 		}
 		//dst, err := netlink.ParseIPNet("0.0.0.0/0") // TODO Das war davor - darf nicht mehr, weil es bereits deine default route gibt
 		// TODO Es muss ein oakestra netzwerk bestimmt werden
-		dst, err := netlink.ParseIPNet("10.15.0.0/2")
+		dst, err := netlink.ParseIPNet("10.30.0.0/16")
 		if err != nil {
 			return err
 		}
@@ -265,12 +267,12 @@ func (env *Environment) setContainerRoutes(containerPid int, peerVeth string) er
 }
 
 // setup the address of the network namespace veth
-func (env *Environment) addPeerLinkNetwork(nspid int, addr string, vethname string) error {
+func (env *Environment) addPeerLinkNetwork(nspid int, netnsPath string, addr string, vethname string) error {
 	netlinkAddr, err := netlink.ParseAddr(addr)
 	if err != nil {
 		return err
 	}
-	err = env.execInsideNs(nspid, func() error {
+	err = env.execInsideNs(nspid, netnsPath, func() error {
 		link, err := netlink.LinkByName(vethname)
 		if err != nil {
 			return err
@@ -308,7 +310,7 @@ func (env *Environment) addPeerLinkNetworkByNsName(NsName string, addr string, v
 }
 
 // Execute function inside a namespace
-func (env *Environment) execInsideNs(pid int, function func() error) error {
+func (env *Environment) execInsideNs(pid int, netnsPath string, function func() error) error {
 	var containerNs netns.NsHandle
 
 	runtime.LockOSThread()
@@ -317,7 +319,8 @@ func (env *Environment) execInsideNs(pid int, function func() error) error {
 	stdNetns, err := netns.Get()
 	if err == nil {
 		defer stdNetns.Close()
-		containerNs, err = netns.GetFromPid(pid)
+		containerNs, err = netns.GetFromPath(netnsPath)
+		//containerNs, err = netns.GetFromPid(pid)
 		if err == nil {
 			defer netns.Set(stdNetns)
 			err = netns.Set(containerNs)
