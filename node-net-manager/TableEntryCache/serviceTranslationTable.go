@@ -3,6 +3,7 @@ package TableEntryCache
 import (
 	"NetManager/logger"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"sync"
@@ -21,6 +22,22 @@ type TableEntry struct {
 	Nsip             net.IP      `json:"nsip"`
 	Nsipv6           net.IP      `json:"nsipv6"`
 	ServiceIP        []ServiceIP `json:"serviceIP"`
+}
+
+func (te TableEntry) String() string {
+	return fmt.Sprintf("JobName: %s\n"+
+		"Appname: %s\n"+
+		"Appns: %s\n"+
+		"Servicename: %s\n"+
+		"Servicenamespace: %s\n"+
+		"Instancenumber: %d\n"+
+		"Cluster: %d\n"+
+		"Nodeip: %s\n"+
+		"Nodeport: %d\n"+
+		"Nsip: %s\n"+
+		"ServiceIP: %v\n",
+		te.JobName, te.Appname, te.Appns, te.Servicename, te.Servicenamespace, te.Instancenumber,
+		te.Cluster, te.Nodeip, te.Nodeport, te.Nsip, te.ServiceIP)
 }
 
 type ServiceIpType int
@@ -51,6 +68,7 @@ func NewTableManager() TableManager {
 }
 
 func (t *TableManager) Add(entry TableEntry) error {
+	fmt.Println(entry.String())
 	if t.isValid(entry) {
 		t.rwlock.Lock()
 		defer t.rwlock.Unlock()
@@ -127,6 +145,7 @@ func (t *TableManager) SearchByServiceIP(ip net.IP) []TableEntry {
 func (t *TableManager) SearchByNsIP(ip net.IP) (TableEntry, bool) {
 	t.rwlock.Lock()
 	defer t.rwlock.Unlock()
+	fmt.Println(t.translationTable)
 	for _, tableElement := range t.translationTable {
 		if tableElement.Nsip.Equal(ip) || tableElement.Nsipv6.Equal(ip) {
 			returnEntry := tableElement

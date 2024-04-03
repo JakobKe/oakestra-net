@@ -73,5 +73,6 @@ func NotifyDeploymentStatus(appname string, status string, instance int, nsip st
 		Hostport:       hostport,
 	}
 	jsonreq, _ := json.Marshal(request)
+	print(jsonreq)
 	return GetNetMqttClient().PublishToBroker("service/deployed", string(jsonreq))
 }

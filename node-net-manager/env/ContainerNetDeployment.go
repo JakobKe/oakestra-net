@@ -5,10 +5,13 @@ import (
 	"NetManager/mqtt"
 	"NetManager/network"
 	"fmt"
+	"log"
 	"net"
+	"path/filepath"
 	"runtime/debug"
 
 	"github.com/vishvananda/netlink"
+	"golang.org/x/sys/unix"
 )
 
 type ContainerDeyplomentHandler struct {
@@ -31,7 +34,15 @@ func InitContainerDeployment(env *Environment) {
 }
 
 // AttachNetworkToContainer Attach a Docker container to the bridge and the current network environment
-func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, sname string, instancenumber int, portmapping string) (net.IP, net.IP, error) {
+func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname string, instancenumber int, portmapping string) (net.IP, error) {
+
+	netnsPath := filepath.Join("/var/run/netns", netns)
+	log.Println(netnsPath)
+	fd, err := unix.Open(netnsPath, unix.O_RDONLY|unix.O_CLOEXEC, 0)
+	if err != nil {
+		log.Printf("COULD NOT READ FILE: %v", err)
+	}
+
 	env := h.env
 	cleanup := func(veth *netlink.Veth) {
 		_ = netlink.LinkDel(veth)
@@ -50,12 +61,20 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, sname string, instan
 		cleanup(vethIfce)
 		return nil, nil, err
 	}
-	if err := netlink.LinkSetNsPid(peerVeth, pid); err != nil {
-		cleanup(vethIfce)
-		return nil, nil, err
+
+	if pid == 0 {
+		if err := netlink.LinkSetNsFd(peerVeth, fd); err != nil {
+			cleanup(vethIfce)
+			return nil, err
+		}
+	} else {
+		if err := netlink.LinkSetNsPid(peerVeth, pid); err != nil {
+			cleanup(vethIfce)
+			return nil, err
+		}
 	}
 
-	// generate a new ip for this container
+	//generate a new ip for this container
 	ip, err := env.generateAddress()
 	if err != nil {
 		cleanup(vethIfce)
@@ -72,8 +91,7 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, sname string, instan
 
 	// set ip to the container veth
 	logger.DebugLogger().Println("Assigning ip ", ip.String()+env.config.HostBridgeMask, " to container ")
-	if err := env.addPeerLinkNetwork(pid, ip.String()+env.config.HostBridgeMask, vethIfce.PeerName); err != nil {
-		logger.ErrorLogger().Println("Error in addPeerLinkNetwork")
+	if err := env.addPeerLinkNetwork(pid, netnsPath, ip.String()+env.config.HostBridgeMask, vethIfce.PeerName); err != nil {
 		cleanup(vethIfce)
 		env.freeContainerAddress(ip)
 		env.freeContainerAddress(ipv6)
@@ -116,6 +134,8 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, sname string, instan
 		return nil, nil, err
 	}
 
+	log.Println("7")
+
 	env.BookVethNumber()
 	if err = env.setVethFirewallRules(vethIfce.Name); err != nil {
 		logger.ErrorLogger().Println("Error in setFirewallRules")
@@ -142,6 +162,8 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, sname string, instan
 		env.freeContainerAddress(ipv6)
 		return nil, nil, err
 	}
+
+	log.Println("9")
 	env.deployedServicesLock.Lock()
 	env.deployedServices[fmt.Sprintf("%s.%d", sname, instancenumber)] = service{
 		ip:          ip,

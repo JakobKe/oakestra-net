@@ -6,7 +6,6 @@ import (
 	"NetManager/logger"
 	"NetManager/mqtt"
 	"NetManager/network"
-	"NetManager/playground"
 	"NetManager/proxy"
 	"encoding/json"
 	"flag"
@@ -17,6 +16,7 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/tkanos/gonfig"
 )
 
@@ -62,27 +62,6 @@ var Proxy proxy.GoProxyTunnel
 var WorkerID string
 var Configuration netConfiguration
 
-/*
-	DEPRECATED
-
-Endpoint: /docker/deploy
-Usage: used to assign a network to a docker container. This method can be used only after the registration
-Method: POST
-Request Json:
-
-	{
-		containerId:string #name of the container or containerid
-		appName:string
-		instanceNumber:int
-	}
-
-Response Json:
-
-	{
-		serviceName:    string
-		nsAddress:  	string # address assigned to this container
-	}
-*/
 func dockerDeploy(writer http.ResponseWriter, request *http.Request) {
 	log.Println("Received HTTP request - /docker/deploy ")
 	writer.WriteHeader(299)
@@ -144,26 +123,38 @@ func register(writer http.ResponseWriter, request *http.Request) {
 /*
 Automatic register in k8s cluster
 */
-func automaticRegister() {
+func automaticRegister() error {
 	log.Println("Start automatic register")
 
-	clientID := "test-k8s-1" // This will have to be dealt with later
+	//c.GetWorkerID()
 
-	//drop the request if the node is already initialized
-	if WorkerID != "" {
-		if WorkerID == clientID {
-			log.Printf("Node already initialized")
-		} else {
-			log.Printf("Attempting to re-initialize a node with a different worker ID")
-		}
-		return
+	// clientID := "test-k8s-1" //  c.GetWorkerID() //" // This will have to be dealt with later
+	// if err != nil {
+	// 	return fmt.Errorf("k8sclient error: %v", err)
+	// }
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen des Hostnamens:", err)
+		return err
 	}
 
+	//drop the request if the node is already initialized
+	// if WorkerID != "" {
+	// 	if WorkerID == clientID {
+	// 		log.Printf("Node already initialized")
+	// 	} else {
+	// 		log.Printf("Attempting to re-initialize a node with a different worker ID")
+	// 	}
+	// 	return nil
+	// }
+
+	clientID := hostname + "/" + Configuration.NodePublicAddress
 	WorkerID = clientID
 
 	log.Printf("START MQTT")
 	//initialize mqtt connection to the broker
-	//mqtt.InitNetMqttClient(clientID, Configuration.ClusterUrl, Configuration.ClusterMqttPort)
+	mqtt.InitNetMqttClient(clientID, Configuration.ClusterUrl, Configuration.ClusterMqttPort)
 
 	log.Printf("START PROXY")
 	//initialize the proxy tunnel
@@ -176,6 +167,7 @@ func automaticRegister() {
 	Env = *env.NewEnvironmentClusterConfigured(Proxy.HostTUNDeviceName)
 
 	Proxy.SetEnvironment(&Env)
+	return nil
 }
 
 func main() {
@@ -183,35 +175,32 @@ func main() {
 	cfgFile := flag.String("cfg", "/etc/netmanager/netcfg.json", "Set a cluster IP")
 	localPort := flag.Int("p", 6000, "Default local port of the NetManager")
 	debugMode := flag.Bool("D", false, "Debug mode, it enables debug-level logs")
-	p2pMode := flag.Bool("p2p", false, "Start the engine in p2p mode (playground2playground), requires the address of a peer node. Useful for debugging.")
 	flag.Parse()
 
 	err := gonfig.GetConf(*cfgFile, &Configuration)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(errors.Wrap(err, "failed to load configuration"))
 	}
 
-	// Überschreiben der MQTT Adresse, mit einer ENV Variblen
-	Configuration.ClusterMqttPort = os.Getenv("MOSQUITTO_SVC_SERVICE_PORT")
-	Configuration.ClusterUrl = os.Getenv("MOSQUITTO_SVC_SERVICE_HOST")
+	//c, _ := kubenetesclient.NewKubernetesClient()
+	// hostIP := "192.168.123.196" //c.GetHostIP()
+	// if err != nil {
+	// 	log.Fatal(errors.Wrap(err, "failed to load hostip"))
+	// }
+
+	// Configuration.NodePublicAddress = hostIP
+	// Configuration.NodePublicPort = os.Getenv("NODE_PORT")
+	// Configuration.ClusterMqttPort = os.Getenv("MOSQUITTO_SVC_SERVICE_PORT")
+	// Configuration.ClusterUrl = os.Getenv("MOSQUITTO_SVC_SERVICE_HOST")
 	// TODO die ClusterURL ist so nicht ganz richtig. Das läuft ja nicht mehr im "Cluster"
+	// Eigentlich ist es die MQTT Broker URL.
 
 	if *debugMode {
 		logger.SetDebugMode()
 	}
 
-	log.Print(Configuration)
-
+	// TODO - ist das der richtige Ansatz?=
 	network.IptableFlushAll()
-
-	if *p2pMode {
-		defer playground.APP.Stop()
-		playground.CliLoop(Configuration.NodePublicAddress, Configuration.NodePublicPort)
-	}
-
-	// Den brauche ich eigentlich nicht. Wir registieren in K8s direkt.
-	//log.Println("NetManager started. Waiting for registration.")
-	//handleRequests(*localPort)
 
 	log.Println("NetManager started. Start Registration of Node.")
 
