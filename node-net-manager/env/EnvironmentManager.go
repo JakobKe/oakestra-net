@@ -253,23 +253,17 @@ func (env *Environment) setVethFirewallRules(bridgeVethName string) error {
 }
 
 // add routes inside the container namespace to forward the traffic using the bridge
-<<<<<<< HEAD
-func (env *Environment) setContainerRoutes(containerPid int, peerVeth string) error {
-	// Add route to bridge
-	// sudo nsenter -n -t 5565 ip route add 0.0.0.0/0 via 127.19.x.y dev veth013
-	err := env.execInsideNs(containerPid, func() error {
-=======
 func (env *Environment) setContainerRoutes(containerPid int, netnsPath string, peerVeth string) error {
 	//Add route to bridge
 	//sudo nsenter -n -t 5565 ip route add 0.0.0.0/0 via 127.19.x.y dev veth013
 	err := env.execInsideNs(containerPid, netnsPath, func() error {
->>>>>>> ec15089 (Adjustements to work in Kubernetes env)
 		link, err := netlink.LinkByName(peerVeth)
 		if err != nil {
 			return err
 		}
 		//dst, err := netlink.ParseIPNet("0.0.0.0/0") // TODO Das war davor - darf nicht mehr, weil es bereits deine default route gibt
 		// TODO Es muss ein oakestra netzwerk bestimmt werden
+		// Vielleicht noch so erweitern, dass gecheckt wird, ob es ein zweites CNI gibt?
 		dst, err := netlink.ParseIPNet("10.30.0.0/16")
 		if err != nil {
 			return err
@@ -288,8 +282,8 @@ func (env *Environment) setContainerRoutes(containerPid int, netnsPath string, p
 	return nil
 }
 
-func (env *Environment) setIPv6ContainerRoutes(containerPid int, peerVeth string) error {
-	err := env.execInsideNs(containerPid, func() error {
+func (env *Environment) setIPv6ContainerRoutes(containerPid int, netnsPath string, peerVeth string) error {
+	err := env.execInsideNs(containerPid, netnsPath, func() error {
 		link, err := netlink.LinkByName(peerVeth)
 		if err != nil {
 			return err
@@ -357,8 +351,8 @@ func (env *Environment) addPeerLinkNetworkByNsName(NsName string, addr string, v
 
 // disable Duplicate Address Detection (DAD) for IPv6 interfaces in namespace
 // to prevent interface startup delay
-func (env *Environment) disableDAD(pid int, vethname string) error {
-	err := env.execInsideNs(pid, func() error {
+func (env *Environment) disableDAD(pid int, netnsPath string, vethname string) error {
+	err := env.execInsideNs(pid, netnsPath, func() error {
 		cmd := exec.Command("sysctl", "-w", "net.ipv6.conf.default.accept_dad=0")
 		err := cmd.Run()
 		if err != nil {

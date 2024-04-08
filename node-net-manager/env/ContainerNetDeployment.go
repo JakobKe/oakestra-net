@@ -34,7 +34,7 @@ func InitContainerDeployment(env *Environment) {
 }
 
 // AttachNetworkToContainer Attach a Docker container to the bridge and the current network environment
-func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname string, instancenumber int, portmapping string) (net.IP, error) {
+func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname string, instancenumber int, portmapping string) (net.IP, net.IP, error) {
 
 	netnsPath := filepath.Join("/var/run/netns", netns)
 	log.Println(netnsPath)
@@ -65,12 +65,12 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 	if pid == 0 {
 		if err := netlink.LinkSetNsFd(peerVeth, fd); err != nil {
 			cleanup(vethIfce)
-			return nil, err
+			return nil, nil, err
 		}
 	} else {
 		if err := netlink.LinkSetNsPid(peerVeth, pid); err != nil {
 			cleanup(vethIfce)
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -118,7 +118,7 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 
 	// Add traffic route to bridge
 	logger.DebugLogger().Println("Setting container routes ")
-	if err = env.setContainerRoutes(pid, vethIfce.PeerName); err != nil {
+	if err = env.setContainerRoutes(pid, netnsPath, vethIfce.PeerName); err != nil {
 		logger.ErrorLogger().Println("Error in setContainerRoutes")
 		cleanup(vethIfce)
 		env.freeContainerAddress(ip)
