@@ -34,13 +34,6 @@ type k8sDeployTask struct {
 	Podname          string `json:"podName"`
 }
 
-type k8sDeployTask struct {
-	Pid            int    `json:"pid"`
-	ServiceName    string `json:"serviceName"`
-	Instancenumber int    `json:"instanceNumber"`
-	Podname        string `json:"podName"`
-}
-
 type TaskReady struct {
 	IP   net.IP
 	IPv6 net.IP
@@ -103,27 +96,14 @@ func deploymentHandler(requestStruct *ContainerDeployTask) (net.IP, net.IP, erro
 
 	// attach network to the container
 	netHandler := env.GetNetDeployment(requestStruct.Runtime)
-<<<<<<< HEAD
-	addr, err := netHandler.DeployNetwork(requestStruct.Pid, requestStruct.NetworkNamespace, requestStruct.ServiceName, requestStruct.Instancenumber, requestStruct.PortMappings)
-	if err != nil {
-		logger.ErrorLogger().Println("[ERROR]:", err)
-		logger.ErrorLogger().Println("Adress", addr)
-		return nil, err
-	}
-
-	log.Println(addr)
-
-	//notify to net-component
-=======
 	logger.DebugLogger().Printf("Got netHandler: %v", netHandler)
-	addr, addrv6, err := netHandler.DeployNetwork(requestStruct.Pid, requestStruct.ServiceName, requestStruct.Instancenumber, requestStruct.PortMappings)
+	addr, addrv6, err := netHandler.DeployNetwork(requestStruct.Pid, requestStruct.NetworkNamespace, requestStruct.ServiceName, requestStruct.Instancenumber, requestStruct.PortMappings)
 	if err != nil {
 		logger.ErrorLogger().Println("[ERROR]:", err)
 		return nil, nil, err
 	}
 
 	// notify to net-component
->>>>>>> oakestra-develop
 	err = mqtt.NotifyDeploymentStatus(
 		requestStruct.ServiceName,
 		"DEPLOYED",

@@ -99,7 +99,7 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 	}
 
 	logger.DebugLogger().Println("Disabling DAD for IPv6")
-	if err := env.disableDAD(pid, vethIfce.PeerName); err != nil {
+	if err := env.disableDAD(pid, netnsPath, vethIfce.PeerName); err != nil {
 		logger.ErrorLogger().Println("Error in Disabling DAD")
 		cleanup(vethIfce)
 		env.freeContainerAddress(ip)
@@ -108,7 +108,7 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 	}
 
 	logger.DebugLogger().Println("Assigning ipv6 ", ipv6.String()+env.config.HostBridgeIPv6Prefix, " to container ")
-	if err := env.addPeerLinkNetwork(pid, ipv6.String()+env.config.HostBridgeIPv6Prefix, vethIfce.PeerName); err != nil {
+	if err := env.addPeerLinkNetwork(pid, netns, ipv6.String()+env.config.HostBridgeIPv6Prefix, vethIfce.PeerName); err != nil {
 		logger.ErrorLogger().Println("Error in addPeerLinkNetworkv6")
 		cleanup(vethIfce)
 		env.freeContainerAddress(ip)
@@ -126,7 +126,7 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 		return nil, nil, err
 	}
 
-	if err = env.setIPv6ContainerRoutes(pid, vethIfce.PeerName); err != nil {
+	if err = env.setIPv6ContainerRoutes(pid, netnsPath, vethIfce.PeerName); err != nil {
 		logger.ErrorLogger().Println("Error in setIPv6ContainerRoutes")
 		cleanup(vethIfce)
 		env.freeContainerAddress(ip)
