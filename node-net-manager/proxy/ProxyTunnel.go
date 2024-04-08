@@ -4,20 +4,11 @@ import (
 	"NetManager/TableEntryCache"
 	"NetManager/env"
 	"NetManager/logger"
-	"NetManager/network"
-	"bytes"
-	"errors"
+	"NetManager/proxy/iputils"
 	"fmt"
-	"log"
 	"math/rand"
 	"net"
 	"sync"
-
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/ip4defrag"
-	"github.com/google/gopacket/layers"
-	"github.com/songgao/water"
-)
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"

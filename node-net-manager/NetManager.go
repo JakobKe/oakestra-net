@@ -198,10 +198,6 @@ func main() {
 	if *debugMode {
 		logger.SetDebugMode()
 	}
-<<<<<<< HEAD
-=======
-
->>>>>>> oakestra-develop
 	network.IptableFlushAll()
 
 	log.Println("NetManager started. Start Registration of Node.")
