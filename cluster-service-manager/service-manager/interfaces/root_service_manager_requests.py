@@ -50,9 +50,18 @@ def cloud_table_query_ip(ip):
     request_addr = ROOT_SERVICE_MANAGER_ADDR + '/api/net/service/ip/' + str(job_ip) + '/instances'
     print(request_addr)
     try:
-        return requests.get(request_addr).json()
+        response = requests.get(request_addr)
+        print('Status code:', response.status_code)
+        if response.status_code == 200:
+            data = response.json()
+            print('Response body:', data)
+            return data
+        else:
+            print('Error:', response.text)
+            return None
     except requests.exceptions.RequestException as e:
         print('Calling System Manager /api/job/ip/../instances not successful.')
+        print('Error:', e)
 
 
 def cloud_table_query_service_name(name):

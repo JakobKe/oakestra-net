@@ -361,7 +361,6 @@ func (proxy *GoProxyTunnel) createTun() {
 	ifce, err := water.New(config)
 	log.Printf("Name des Interface: %s", ifce.Name())
 	if err != nil {
-		// TODO: Fehlermeldung sollte besser sein.
 		log.Fatal(err)
 	}
 

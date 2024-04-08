@@ -19,6 +19,7 @@ def notify_deployment(cluster_addr, cluster_port, job_name, instancenum):
 
 
 def _notify_interest_update(cluster_addr, cluster_port, job_name, instancenum, type):
+    # Hier gibt es noch einen Fehler. 
     return request_with_retry(
         url="http://" + str(cluster_addr) + ":" + str(cluster_port) + NOTIFY_INTEREST_ENDPOINT,
         json={

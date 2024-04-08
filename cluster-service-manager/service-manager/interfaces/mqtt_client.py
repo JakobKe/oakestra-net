@@ -72,7 +72,7 @@ def mqtt_init(flask_app):
     mqtt.loop_start()
 
 
-def _deployment_handler(client_id, payload):
+def _deployment_handler(client_id, payload):    
     appname = payload.get("appname")
     status = payload.get("status")
     nsIp = payload.get("nsip")

@@ -128,8 +128,7 @@ func NewCustom(proxyname string, customConfig Configuration) *Environment {
 func NewEnvironmentClusterConfigured(proxyname string) *Environment {
 	logger.InfoLogger().Println("Asking the cluster for a new subnetwork")
 
-	//subnetwork, err := mqtt.RequestSubnetworkMqttBlocking() // TODO darf nicht geskipped werden.
-	//subnetwork := "10.0.0.0/16"
+	// subnetwork, err := mqtt.RequestSubnetworkMqttBlocking() // TODO darf nicht geskipped werden.
 	// if err != nil {
 	// 	log.Fatal("Invalid subnetwork received. Can't proceed.")
 	// }
@@ -142,7 +141,7 @@ func NewEnvironmentClusterConfigured(proxyname string) *Environment {
 	}
 	config := Configuration{
 		HostBridgeName:             "goProxyBridge",
-		HostBridgeIP:               "10.0.0.2", // TOOD network.NextIP(net.ParseIP(subnetwork), 1).String(),
+		HostBridgeIP:               "10.0.0.2", // TODO network.NextIP(net.ParseIP(subnetwork), 1).String(),
 		HostBridgeMask:             "/26",
 		HostTunName:                "goProxyTun",
 		ConnectedInternetInterface: "",
@@ -246,8 +245,8 @@ func (env *Environment) setContainerRoutes(containerPid int, netnsPath string, p
 		if err != nil {
 			return err
 		}
-		//dst, err := netlink.ParseIPNet("0.0.0.0/0") // TODO Das war davor - darf nicht mehr, weil es bereits deine default route gibt
-		// TODO Es muss ein oakestra netzwerk bestimmt werden
+		// TODO - first option only, when netmanager only networking tool
+		//dst, err := netlink.ParseIPNet("0.0.0.0/0")
 		dst, err := netlink.ParseIPNet("10.30.0.0/16")
 		if err != nil {
 			return err

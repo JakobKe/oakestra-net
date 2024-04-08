@@ -42,8 +42,6 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 		log.Printf("COULD NOT READ FILE: %v", err)
 	}
 
-	log.Println("1")
-
 	env := h.env
 	cleanup := func(veth *netlink.Veth) {
 		_ = netlink.LinkDel(veth)
@@ -55,8 +53,6 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 		return nil, err
 	}
 
-	log.Println("2")
-
 	// Attach veth2 to the docker container
 	logger.DebugLogger().Println("Attaching peerveth to container ")
 	peerVeth, err := netlink.LinkByName(vethIfce.PeerName)
@@ -65,10 +61,7 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 		return nil, err
 	}
 
-	log.Println("3")
-
 	if pid == 0 {
-		log.Println("3.1")
 		if err := netlink.LinkSetNsFd(peerVeth, fd); err != nil {
 			cleanup(vethIfce)
 			return nil, err
@@ -80,8 +73,6 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 		}
 	}
 
-	log.Println("4")
-
 	//generate a new ip for this container
 	ip, err := env.generateAddress()
 	if err != nil {
@@ -89,7 +80,6 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 		return nil, err
 	}
 
-	log.Println("5")
 	// set ip to the container veth
 	logger.DebugLogger().Println("Assigning ip ", ip.String()+env.config.HostBridgeMask, " to container ")
 	if err := env.addPeerLinkNetwork(pid, netnsPath, ip.String()+env.config.HostBridgeMask, vethIfce.PeerName); err != nil {
@@ -98,7 +88,6 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 		return nil, err
 	}
 
-	log.Println("6")
 	//Add traffic route to bridge
 	logger.DebugLogger().Println("Setting container routes ")
 	if err = env.setContainerRoutes(pid, netnsPath, vethIfce.PeerName); err != nil {
@@ -107,8 +96,6 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 		return nil, err
 	}
 
-	log.Println("7")
-
 	env.BookVethNumber()
 	if err = env.setVethFirewallRules(vethIfce.Name); err != nil {
 		env.freeContainerAddress(ip)
@@ -116,7 +103,6 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 		return nil, err
 	}
 
-	log.Println("8")
 	if err = network.ManageContainerPorts(ip.String(), portmapping, network.OpenPorts); err != nil {
 		debug.PrintStack()
 		env.freeContainerAddress(ip)
@@ -124,7 +110,6 @@ func (h *ContainerDeyplomentHandler) DeployNetwork(pid int, netns string, sname 
 		return nil, err
 	}
 
-	log.Println("9")
 	env.deployedServicesLock.Lock()
 	env.deployedServices[fmt.Sprintf("%s.%d", sname, instancenumber)] = service{
 		ip:          ip,

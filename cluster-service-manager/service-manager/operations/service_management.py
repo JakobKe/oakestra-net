@@ -13,6 +13,7 @@ def create_service(job_name):
 
     # table query the root to get the instances
     try:
+        
         job = root_service_manager_requests.cloud_table_query_service_name(job_name)
         mongodb_requests.mongo_insert_job(copy.deepcopy(job))
         for instance in job.get('instance_list'):

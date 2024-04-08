@@ -149,7 +149,7 @@ func automaticRegister() error {
 	// 	return nil
 	// }
 
-	clientID := hostname + "/" + Configuration.NodePublicAddress
+	clientID := hostname + "-" + Configuration.NodePublicAddress // "/" creates a "new" topic
 	WorkerID = clientID
 
 	log.Printf("START MQTT")
@@ -198,8 +198,6 @@ func main() {
 	if *debugMode {
 		logger.SetDebugMode()
 	}
-
-	// TODO - ist das der richtige Ansatz?=
 	network.IptableFlushAll()
 
 	log.Println("NetManager started. Start Registration of Node.")
