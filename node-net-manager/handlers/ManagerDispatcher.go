@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"NetManager/env"
+	"log"
 
 	"github.com/gorilla/mux"
 )
@@ -36,7 +37,11 @@ func GetNetManager(handler string) ManagerInterface {
 }
 
 func RegisterAllManagers(Env *env.Environment, WorkerID *string, NodePublicAddress string, NodePublicPort string, Router *mux.Router) {
-	for _, getfunc := range AvailableRuntimes {
+
+	for s, getfunc := range AvailableRuntimes {
+
+		log.Println("Available Runtime")
+		log.Println(s)
 		getfunc().Register(Env, WorkerID, NodePublicAddress, NodePublicPort, Router)
 	}
 }

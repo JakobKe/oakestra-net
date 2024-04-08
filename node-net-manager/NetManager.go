@@ -49,6 +49,13 @@ func handleRequests(port int) {
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), netRouter))
 }
 
+func handleRequestsCNIPlugin(port int) {
+	netRouter := mux.NewRouter().StrictSlash(true)
+	handlers.RegisterAllManagers(&Env, &WorkerID, Configuration.NodePublicAddress, Configuration.NodePublicPort, netRouter)
+
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), netRouter))
+}
+
 var Env env.Environment
 var Proxy proxy.GoProxyTunnel
 var WorkerID string
@@ -133,6 +140,43 @@ func register(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
 }
 
+/*
+Automatic register in k8s cluster
+*/
+func automaticRegister() {
+	log.Println("Start automatic register")
+
+	clientID := "test-k8s-1" // This will have to be dealt with later
+
+	//drop the request if the node is already initialized
+	if WorkerID != "" {
+		if WorkerID == clientID {
+			log.Printf("Node already initialized")
+		} else {
+			log.Printf("Attempting to re-initialize a node with a different worker ID")
+		}
+		return
+	}
+
+	WorkerID = clientID
+
+	log.Printf("START MQTT")
+	//initialize mqtt connection to the broker
+	//mqtt.InitNetMqttClient(clientID, Configuration.ClusterUrl, Configuration.ClusterMqttPort)
+
+	log.Printf("START PROXY")
+	//initialize the proxy tunnel
+	Proxy = proxy.New()
+	log.Printf("START PROXY LISTENING")
+	Proxy.Listen()
+
+	log.Printf("START ENV")
+	//initialize the Env Manager
+	Env = *env.NewEnvironmentClusterConfigured(Proxy.HostTUNDeviceName)
+
+	Proxy.SetEnvironment(&Env)
+}
+
 func main() {
 
 	cfgFile := flag.String("cfg", "/etc/netmanager/netcfg.json", "Set a cluster IP")
@@ -159,6 +203,14 @@ func main() {
 		playground.CliLoop(Configuration.NodePublicAddress, Configuration.NodePublicPort)
 	}
 
-	log.Println("NetManager started. Waiting for registration.")
-	handleRequests(*localPort)
+	// Den brauche ich eigentlich nicht. Wir registieren in K8s direkt.
+	//log.Println("NetManager started. Waiting for registration.")
+	//handleRequests(*localPort)
+
+	log.Println("NetManager started. Start Registration of Node.")
+
+	automaticRegister()
+
+	// Start manager for listenints
+	handleRequestsCNIPlugin(*localPort)
 }

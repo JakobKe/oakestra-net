@@ -24,6 +24,13 @@ type ContainerDeployTask struct {
 	Finish         chan TaskReady
 }
 
+type k8sDeployTask struct {
+	Pid            int    `json:"pid"`
+	ServiceName    string `json:"serviceName"`
+	Instancenumber int    `json:"instanceNumber"`
+	Podname        string `json:"podName"`
+}
+
 type TaskReady struct {
 	IP   net.IP
 	IPv6 net.IP
@@ -86,6 +93,7 @@ func deploymentHandler(requestStruct *ContainerDeployTask) (net.IP, net.IP, erro
 
 	// attach network to the container
 	netHandler := env.GetNetDeployment(requestStruct.Runtime)
+<<<<<<< HEAD
 	logger.DebugLogger().Printf("Got netHandler: %v", netHandler)
 	addr, addrv6, err := netHandler.DeployNetwork(requestStruct.Pid, requestStruct.ServiceName, requestStruct.Instancenumber, requestStruct.PortMappings)
 	if err != nil {
@@ -94,6 +102,18 @@ func deploymentHandler(requestStruct *ContainerDeployTask) (net.IP, net.IP, erro
 	}
 
 	// notify to net-component
+=======
+	addr, err := netHandler.DeployNetwork(requestStruct.Pid, requestStruct.ServiceName, requestStruct.Instancenumber, requestStruct.PortMappings)
+	if err != nil {
+		logger.ErrorLogger().Println("[ERROR]:", err)
+		logger.ErrorLogger().Println("Adress", addr)
+		return nil, err
+	}
+
+	logger.ErrorLogger().Println("Ab hier geht es eh nicht mehr weiter.")
+
+	//notify to net-component
+>>>>>>> 0ccb98f (First dump of changes for testing)
 	err = mqtt.NotifyDeploymentStatus(
 		requestStruct.ServiceName,
 		"DEPLOYED",

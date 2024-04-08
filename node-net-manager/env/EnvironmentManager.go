@@ -154,7 +154,7 @@ func NewEnvironmentClusterConfigured(proxyname string) *Environment {
 	}
 	config := Configuration{
 		HostBridgeName:             "goProxyBridge",
-		HostBridgeIP:               network.NextIPv4(net.ParseIP(ipv4_subnet), 1).String(),
+		HostBridgeIP:               network.NextIPv4(net.ParseIP(ipv4_subnet), 1).String(), // TODO - Das muss ich noch alles testen und verstehen
 		HostBridgeMask:             "/26",
 		HostBridgeIPv6:             network.NextIPv6(net.ParseIP(ipv6_subnet), 1).String(),
 		HostBridgeIPv6Prefix:       "/120",
@@ -259,7 +259,9 @@ func (env *Environment) setContainerRoutes(containerPid int, peerVeth string) er
 		if err != nil {
 			return err
 		}
-		dst, err := netlink.ParseIPNet("0.0.0.0/0")
+		//dst, err := netlink.ParseIPNet("0.0.0.0/0") // TODO Das war davor - darf nicht mehr, weil es bereits deine default route gibt
+		// TODO Es muss ein oakestra netzwerk bestimmt werden
+		dst, err := netlink.ParseIPNet("10.15.0.0/2")
 		if err != nil {
 			return err
 		}
