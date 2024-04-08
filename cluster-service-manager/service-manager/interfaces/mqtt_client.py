@@ -72,15 +72,6 @@ def mqtt_init(flask_app):
     mqtt.loop_start()
 
 
-<<<<<<< HEAD
-def _deployment_handler(client_id, payload):    
-    appname = payload.get("appname")
-    status = payload.get("status")
-    nsIp = payload.get("nsip")
-    instance_number = payload.get("instance_number")
-    host_ip = payload.get("host_ip")
-    host_port = payload.get("host_port")
-=======
 def _deployment_handler(client_id, payload):
     appname = payload.get('appname')
     status = payload.get('status')
@@ -89,7 +80,6 @@ def _deployment_handler(client_id, payload):
     instance_number = payload.get('instance_number')
     host_ip = payload.get('host_ip')
     host_port = payload.get('host_port')
->>>>>>> oakestra-develop
     try:
         deployment_status_report(appname, status, nsIp, nsIPv6, client_id, instance_number, host_ip, host_port)
     except Exception as e:
