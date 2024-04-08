@@ -72,6 +72,7 @@ def mqtt_init(flask_app):
     mqtt.loop_start()
 
 
+<<<<<<< HEAD
 def _deployment_handler(client_id, payload):    
     appname = payload.get("appname")
     status = payload.get("status")
@@ -79,13 +80,22 @@ def _deployment_handler(client_id, payload):
     instance_number = payload.get("instance_number")
     host_ip = payload.get("host_ip")
     host_port = payload.get("host_port")
+=======
+def _deployment_handler(client_id, payload):
+    appname = payload.get('appname')
+    status = payload.get('status')
+    nsIp = payload.get('nsip')
+    nsIPv6 = payload.get('nsipv6')
+    instance_number = payload.get('instance_number')
+    host_ip = payload.get('host_ip')
+    host_port = payload.get('host_port')
+>>>>>>> oakestra-develop
     try:
-        deployment_status_report(
-            appname, status, nsIp, client_id, instance_number, host_ip, host_port
-        )
+        deployment_status_report(appname, status, nsIp, nsIPv6, client_id, instance_number, host_ip, host_port)
     except Exception as e:
         traceback.print_exc()
         print(e)
+    
 
 
 def _undeployment_handler(client_id, payload):
@@ -135,9 +145,9 @@ def _subnet_handler(client_id, payload):
     if method == "GET":
         # associate new subnetwork to the node
         addr = root_service_manager_get_subnet()
-        mongo_find_node_by_id_and_update_subnetwork(client_id, addr)
-        mqtt_publish_subnetwork_result(client_id, {"address": addr})
-    elif method == "DELETE":
+        mongo_find_node_by_id_and_update_subnetwork(client_id, addr[0], addr[1])
+        mqtt_publish_subnetwork_result(client_id, {"address": addr[0], "addressv6": addr[1]})
+    elif method == 'DELETE':
         # remove subnetwork from node
         pass
 

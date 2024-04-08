@@ -149,7 +149,7 @@ func automaticRegister() error {
 	// 	return nil
 	// }
 
-	clientID := hostname + "-" + Configuration.NodePublicAddress // "/" creates a "new" topic
+	clientID := hostname + "-" + Configuration.NodePublicAddress
 	WorkerID = clientID
 
 	log.Printf("START MQTT")
@@ -198,6 +198,10 @@ func main() {
 	if *debugMode {
 		logger.SetDebugMode()
 	}
+<<<<<<< HEAD
+=======
+
+>>>>>>> oakestra-develop
 	network.IptableFlushAll()
 
 	log.Println("NetManager started. Start Registration of Node.")
